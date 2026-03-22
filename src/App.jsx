@@ -44,14 +44,13 @@ input[type=number]{width:75px}
 .al{display:flex;gap:8px;align-items:center}
 .tw{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
 .th{display:grid;padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;gap:8px;align-items:center}
-.th-cands{grid-template-columns:32px 1.6fr 1.2fr .8fr .7fr .6fr 100px 80px 90px}
-.th-jobs{grid-template-columns:1.8fr 1fr .7fr .7fr .7fr .7fr 80px 90px}
+.th-cands{grid-template-columns:32px 1.6fr 1.2fr .8fr .7fr .6fr 100px 80px 110px}
+.th-jobs{grid-template-columns:1.8fr 1fr .7fr .7fr .7fr .7fr 80px 110px}
 .row{display:grid;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center;cursor:pointer;gap:8px;transition:background .1s}
-.row-cands{grid-template-columns:32px 1.6fr 1.2fr .8fr .7fr .6fr 100px 80px 90px}
-.row-jobs{grid-template-columns:1.8fr 1fr .7fr .7fr .7fr .7fr 80px 90px}
+.row-cands{grid-template-columns:32px 1.6fr 1.2fr .8fr .7fr .6fr 100px 80px 110px}
+.row-jobs{grid-template-columns:1.8fr 1fr .7fr .7fr .7fr .7fr 80px 110px}
 .row:last-child{border-bottom:none}
 .row:hover{background:var(--surface2)}
-.row.sel{background:var(--blue-dim)}
 .rck{width:14px;height:14px;accent-color:var(--blue);cursor:pointer}
 .cn{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cp{font-size:12px;color:var(--text3);margin-top:1px;direction:ltr;text-align:right}
@@ -104,11 +103,6 @@ input[type=number]{width:75px}
 .dfv{font-size:13px;font-weight:500}
 .tag{display:inline-flex;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600}
 .ty{background:var(--green-dim);color:var(--green)}.tn{background:var(--red-dim);color:var(--red)}.tp{background:var(--yellow-dim);color:var(--yellow)}
-.aib{background:var(--surface2);border:1px solid #1f6feb44;border-radius:var(--radius);padding:14px;margin-top:14px}
-.ait{font-size:11px;font-weight:700;color:var(--blue-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-.aitxt{font-size:13px;line-height:1.75;color:var(--text2);white-space:pre-wrap}
-.spin2{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:sp .7s linear infinite;display:inline-block;margin-right:6px}
-.ail{display:flex;align-items:center;font-size:13px;color:var(--text3)}
 .stit{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:14px}
 .rta{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:11px;font-family:'Heebo',sans-serif;font-size:13px;line-height:1.7;resize:vertical;min-height:100px;outline:none;direction:rtl}.rta:focus{border-color:var(--blue)}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;font-weight:700;padding:9px 20px;border-radius:var(--radius);font-size:13px;z-index:200;pointer-events:none}
@@ -127,6 +121,8 @@ input[type=number]{width:75px}
 .match-row:hover{background:var(--surface2)}
 .active-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-left:4px}
 .inactive-dot{width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;margin-left:4px}
+.csv-label{padding:5px 10px;border-radius:var(--radius);font-family:'Heebo',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:none;color:var(--text2);display:inline-flex;align-items:center;gap:4px;transition:all .15s}
+.csv-label:hover{color:var(--text)}
 `;
 
 const STATUSES = ["חדש","בבדיקה","נשלח","נדחה"];
@@ -477,6 +473,51 @@ export default function App() {
   useEffect(()=>{load();},[]);
 
   const showT = m => {setToast(m);setTimeout(()=>setToast(null),3000);};
+
+  const importCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    const lines = text.split("\n").filter(l=>l.trim());
+    const headers = lines[0].split(",").map(h=>h.trim().replace(/"/g,"").toLowerCase());
+    let imported = 0, skipped = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const vals = lines[i].split(",").map(v=>v.trim().replace(/"/g,""));
+      const row = {};
+      headers.forEach((h,idx) => row[h] = vals[idx]||"");
+      const name = row.name || row["שם"] || row["שם מלא"] || "";
+      const phone = row.phone || row["טלפון"] || row["phone_number"] || "";
+      const city = row.city || row["עיר"] || "";
+      const job_type = row.job_type || row["משרה"] || row["תפקיד"] || "";
+      if (!name && !phone) continue;
+      const exists = cands.find(c=>c.phone===phone);
+      if (exists) { skipped++; continue; }
+      const job = jobs.find(j=>j.title===job_type);
+      const score = calcScore({military_background:false,has_license:false,has_car:false,nights_availability:"לא",shabbat_availability:"לא"}, job);
+      await api("/candidates",{method:"POST",body:JSON.stringify({name,phone,city,job_type,status:"חדש",score})});
+      imported++;
+    }
+    showT(`יובאו ${imported} מועמדים ✓${skipped>0?" | "+skipped+" כפילויות דולגו":""}`);
+    load();
+    e.target.value = "";
+  };
+
+  const deleteCand = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm("למחוק מועמד זה?")) return;
+    await api(`/candidates?id=eq.${id}`,{method:"DELETE",headers:{Prefer:""}});
+    setCands(p=>p.filter(c=>c.id!==id));
+    showT("מועמד נמחק ✓");
+  };
+
+  const deleteJob = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm("למחוק משרה זו?")) return;
+    await api(`/jobs?id=eq.${id}`,{method:"DELETE",headers:{Prefer:""}});
+    setJobs(p=>p.filter(j=>j.id!==id));
+    showT("משרה נמחקה ✓");
+  };
+
   const filt = cands.filter(c=>
     (fJ==="הכל"||c.job_type===fJ)&&
     (fC==="הכל"||c.city===fC)&&
@@ -533,37 +574,13 @@ export default function App() {
           <button className={`tab${tab==="candidates"?" active":""}`} onClick={()=>setTab("candidates")}>👤 מועמדים ({cands.length})</button>
           <button className={`tab${tab==="jobs"?" active":""}`} onClick={()=>setTab("jobs")}>📋 משרות ({jobs.length})</button>
         </div>
-     {tab==="candidates"&&<>
-  <button className="btn bp" onClick={()=>setAddCandOpen(true)}>+ הוסף מועמד</button>
-  <label className="btn bi" style={{cursor:"pointer"}}>
-    📥 ייבא CSV
-    <input type="file" accept=".csv" style={{display:"none"}} onChange={async e=>{
-      const file = e.target.files[0];
-      if (!file) return;
-      const text = await file.text();
-      const lines = text.split("\n").filter(l=>l.trim());
-      const headers = lines[0].split(",").map(h=>h.trim().replace(/"/g,"").toLowerCase());
-      let imported = 0;
-      for (let i = 1; i < lines.length; i++) {
-        const vals = lines[i].split(",").map(v=>v.trim().replace(/"/g,""));
-        const row = {};
-        headers.forEach((h,idx) => row[h] = vals[idx]||"");
-        const name = row.name || row["שם"] || "";
-        const phone = row.phone || row["טלפון"] || "";
-        const city = row.city || row["עיר"] || "";
-        const job_type = row.job_type || row["משרה"] || "";
-        if (!name && !phone) continue;
-        const job = jobs.find(j=>j.title===job_type);
-        const score = calcScore({military_background:false,has_license:false,has_car:false,nights_availability:"לא",shabbat_availability:"לא"}, job);
-        await api("/candidates",{method:"POST",body:JSON.stringify({name,phone,city,job_type,status:"חדש",score})});
-        imported++;
-      }
-      showT(`יובאו ${imported} מועמדים ✓`);
-      load();
-      e.target.value = "";
-    }}/>
-  </label>
-</>}
+        {tab==="candidates"&&<div style={{display:"flex",gap:8}}>
+          <button className="btn bp" onClick={()=>setAddCandOpen(true)}>+ הוסף מועמד</button>
+          <label className="csv-label">
+            📥 ייבא CSV
+            <input type="file" accept=".csv" style={{display:"none"}} onChange={importCSV}/>
+          </label>
+        </div>}
         {tab==="jobs"&&<button className="btn bp" onClick={()=>setAddJobOpen(true)}>+ הוסף משרה</button>}
       </div>
 
@@ -606,9 +623,10 @@ export default function App() {
                 <div className="sbg"><div className="sf" style={{width:`${c.score}%`}}/></div>
               </div>
               <div><span className={`pill ${sC(c.status)}`}>{c.status}</span></div>
-              <div style={{display:"flex",gap:5}} onClick={e=>e.stopPropagation()}>
+              <div style={{display:"flex",gap:4}} onClick={e=>e.stopPropagation()}>
                 <button className="btn bi" onClick={()=>setEditCand(c)}>✏️</button>
                 <button className="btn bg" style={{padding:"4px 7px"}} onClick={()=>setSQ([c])}>✈</button>
+                <button className="btn bd" style={{padding:"4px 7px"}} onClick={e=>deleteCand(c.id,e)}>🗑</button>
               </div>
             </div>
           ))}
@@ -621,7 +639,7 @@ export default function App() {
             <div>שם המשרה</div><div>קטגוריה</div><div>שכר/שעה</div><div>מענק</div><div>גיל</div><div>ימי עבודה</div><div>סטטוס</div><div>פעולות</div>
           </div>
           {loading&&<div className="loading"><div className="spin"/><div>טוען משרות...</div></div>}
-          {!loading&&jobs.length===0&&<div className="empty"><div style={{fontSize:40,marginBottom:12}}>📋</div><div style={{fontWeight:600,marginBottom:8}}>אין משרות עדיין</div><div style={{fontSize:13}}>לחץ "+ הוסף משרה" להוספת המשרות הראשונות</div></div>}
+          {!loading&&jobs.length===0&&<div className="empty"><div style={{fontSize:40,marginBottom:12}}>📋</div><div style={{fontWeight:600,marginBottom:8}}>אין משרות עדיין</div></div>}
           {!loading&&jobs.map(j=>(
             <div key={j.id} className="row row-jobs" onClick={()=>setJobDetail(j)}>
               <div><div className="cn">{j.title}</div><div style={{fontSize:12,color:"var(--text3)"}}>{j.location||"—"}</div></div>
@@ -631,8 +649,9 @@ export default function App() {
               <div style={{fontSize:13}}>{j.min_age&&j.max_age?`${j.min_age}–${j.max_age}`:j.min_age?`${j.min_age}+`:"ללא"}</div>
               <div style={{fontSize:13}}>{j.work_days||"—"}</div>
               <div><span className={`pill ${j.is_active?"p2":"p3"}`}>{j.is_active?"פעילה":"לא פעילה"}</span></div>
-              <div style={{display:"flex",gap:5}} onClick={e=>e.stopPropagation()}>
+              <div style={{display:"flex",gap:4}} onClick={e=>e.stopPropagation()}>
                 <button className="btn bi" onClick={()=>setJobModal(j)}>✏️</button>
+                <button className="btn bd" style={{padding:"4px 7px"}} onClick={e=>deleteJob(j.id,e)}>🗑</button>
               </div>
             </div>
           ))}
