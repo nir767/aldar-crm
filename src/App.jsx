@@ -533,7 +533,8 @@ export default function App() {
           <button className={`tab${tab==="candidates"?" active":""}`} onClick={()=>setTab("candidates")}>👤 מועמדים ({cands.length})</button>
           <button className={`tab${tab==="jobs"?" active":""}`} onClick={()=>setTab("jobs")}>📋 משרות ({jobs.length})</button>
         </div>
-        {tab==="candidates"&&<button className="btn bp" onClick={()=>setAddCandOpen(true)}>+ הוסף מועמד</button>
+      {tab==="candidates"&&<><button className="btn bp" onClick={()=>setAddCandOpen(true)}>+ הוסף מועמד</button>
+<label className="btn bi" style={{cursor:"pointer"}}>
 <label className="btn bi" style={{cursor:"pointer"}}>
   📥 ייבא CSV
   <input type="file" accept=".csv" style={{display:"none"}} onChange={async e=>{
