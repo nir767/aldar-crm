@@ -533,36 +533,37 @@ export default function App() {
           <button className={`tab${tab==="candidates"?" active":""}`} onClick={()=>setTab("candidates")}>👤 מועמדים ({cands.length})</button>
           <button className={`tab${tab==="jobs"?" active":""}`} onClick={()=>setTab("jobs")}>📋 משרות ({jobs.length})</button>
         </div>
-      {tab==="candidates"&&<><button className="btn bp" onClick={()=>setAddCandOpen(true)}>+ הוסף מועמד</button>
-<label className="btn bi" style={{cursor:"pointer"}}>
-<label className="btn bi" style={{cursor:"pointer"}}>
-  📥 ייבא CSV
-  <input type="file" accept=".csv" style={{display:"none"}} onChange={async e=>{
-    const file = e.target.files[0];
-    if (!file) return;
-    const text = await file.text();
-    const lines = text.split("\n").filter(l=>l.trim());
-    const headers = lines[0].split(",").map(h=>h.trim().replace(/"/g,"").toLowerCase());
-    let imported = 0;
-    for (let i = 1; i < lines.length; i++) {
-      const vals = lines[i].split(",").map(v=>v.trim().replace(/"/g,""));
-      const row = {};
-      headers.forEach((h,idx) => row[h] = vals[idx]||"");
-      const name = row.name || row["שם"] || "";
-      const phone = row.phone || row["טלפון"] || "";
-      const city = row.city || row["עיר"] || "";
-      const job_type = row.job_type || row["משרה"] || "";
-      if (!name && !phone) continue;
-      const job = jobs.find(j=>j.title===job_type);
-      const score = calcScore({military_background:false,has_license:false,has_car:false,nights_availability:"לא",shabbat_availability:"לא"}, job);
-      await api("/candidates",{method:"POST",body:JSON.stringify({name,phone,city,job_type,status:"חדש",score})});
-      imported++;
-    }
-    showT(`יובאו ${imported} מועמדים ✓`);
-    load();
-    e.target.value = "";
-  }}/>
-</label>
+     {tab==="candidates"&&<>
+  <button className="btn bp" onClick={()=>setAddCandOpen(true)}>+ הוסף מועמד</button>
+  <label className="btn bi" style={{cursor:"pointer"}}>
+    📥 ייבא CSV
+    <input type="file" accept=".csv" style={{display:"none"}} onChange={async e=>{
+      const file = e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      const lines = text.split("\n").filter(l=>l.trim());
+      const headers = lines[0].split(",").map(h=>h.trim().replace(/"/g,"").toLowerCase());
+      let imported = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const vals = lines[i].split(",").map(v=>v.trim().replace(/"/g,""));
+        const row = {};
+        headers.forEach((h,idx) => row[h] = vals[idx]||"");
+        const name = row.name || row["שם"] || "";
+        const phone = row.phone || row["טלפון"] || "";
+        const city = row.city || row["עיר"] || "";
+        const job_type = row.job_type || row["משרה"] || "";
+        if (!name && !phone) continue;
+        const job = jobs.find(j=>j.title===job_type);
+        const score = calcScore({military_background:false,has_license:false,has_car:false,nights_availability:"לא",shabbat_availability:"לא"}, job);
+        await api("/candidates",{method:"POST",body:JSON.stringify({name,phone,city,job_type,status:"חדש",score})});
+        imported++;
+      }
+      showT(`יובאו ${imported} מועמדים ✓`);
+      load();
+      e.target.value = "";
+    }}/>
+  </label>
+</>}
         {tab==="jobs"&&<button className="btn bp" onClick={()=>setAddJobOpen(true)}>+ הוסף משרה</button>}
       </div>
 
