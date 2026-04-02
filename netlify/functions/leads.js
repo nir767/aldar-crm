@@ -18,7 +18,13 @@ exports.handler = async (event) => {
   }
 
   try {
-    const body = JSON.parse(event.body || "{}");
+   let body = {};
+try {
+  body = JSON.parse(event.body || "{}");
+} catch(e) {
+  const params = new URLSearchParams(event.body || "");
+  params.forEach((v, k) => { body[k] = v; });
+}
 
     const name = body.full_name || body.name || "";
     const phone = (body.phone_number || body.phone || "").replace(/[^0-9]/g, "");
